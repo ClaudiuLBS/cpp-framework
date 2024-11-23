@@ -1,91 +1,65 @@
-/**
- *
- * This program demonstrates how to create a simple HTTP server using the
- * Boost.Asio library. The server listens for incoming TCP connections on port 8080,
- * receives HTTP requests, and responds with a fixed "Hello, World!" message.
- *
- * Features:
- * - Listens on port 8080 for incoming connections.
- * - Handles HTTP requests and prints the request to the console.
- * - Responds with a simple HTTP response containing "Hello, World!".
- *
- * Usage:
- * 1. Compile and run the program.
- * 2. Use a web browser or tools like `curl` or postman to send a request to the server:
- *      curl http://localhost:8080
- * 3. The server will respond with "Hello, World!".
- *
- * Dependencies:
- * - Boost.Asio library
- * - C++11 or later
- *
- */
-
-
 #include <boost/asio.hpp>
 #include <iostream>
 #include <array>
-#include "router.hpp"
-#include "text_controller.hpp"
+#include "include/router.hpp"
+#include "include/middleware.hpp"
 
 using boost::asio::ip::tcp;
 
-/**
- *
- * The server initializes a Boost.Asio I/O context and a TCP acceptor to listen
- * for connections on port 8080. For each connection:
- * - It reads the HTTP request from the client.
- * - Prints the request to the console.
- * - Sends a fixed HTTP response with "Hello, World!" as the body.
- *
- * @return int Exit code of the program.
- */
+class Server {
+public:
+	Server(boost::asio::io_context& io_context, unsigned short port)
+		: acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {};
 
-int main() {
-    try {
+	void register_route(const std::string& path, const std::function<std::string(const std::string&)> handler) {
+		router_.register_route(path, handler);
+	}
 
-        boost::asio::io_context io_context;
+	void add_middleware(const Middleware& middleware) {
+		middleware_pipeline_.add_middleware(middleware);
+	}
 
-        // Create a TCP acceptor to listen on port 8080
-        tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), 8080));
-        std::cout << "Server is running on port 8080..." << std::endl;
+	void start() {
+		std::cout << "Server is running...";
+		accept_connections();
+	}
+		 
+private:
+	tcp::acceptor acceptor_;
+	Router router_;
+	MiddlewarePipeline middleware_pipeline_;
 
-        Router router;
-        router.register_route("/hello", TextController::handle);
+	void accept_connections() {
+		while (true) {
+			tcp::socket socket(acceptor_.get_executor());
 
-        // Infinite loop keeping the server running
-        while(true) {
-            // Create a socket to handle client connections
-            tcp::socket socket(io_context);
+			acceptor_.accept(socket);
+			handle_request(std::move(socket));
+		}
+	}
 
-            // Wait for a client to connect
-            acceptor.accept(socket);
+	void handle_request(tcp::socket socket) {
 
-            // Buffer to store incoming data
-            std::array<char, 1024> buffer;
-            boost::system::error_code error;
+		try {
+			std::array<char, 1024> buffer;
+			boost::system::error_code error;
 
-            // Read data from the client
-            size_t bytes_read = socket.read_some(boost::asio::buffer(buffer), error);
+			size_t bytes_read = socket.read_some(boost::asio::buffer(buffer), error);
+			if (error && error != boost::asio::error::eof) {
+				std::cerr << "Error while reading: " << error.message() << std::endl;
+				return;
+			}
 
-            if (!error || error == boost::asio::error::eof) {
-                // Convert the received data to a string and display it
-                std::string request(buffer.data(), bytes_read);
-                std::cout << "Received request:\n" << request << std::endl;
+			std::string request(buffer.data(), bytes_read);
+			std::cout << "Received request:\n" << request << std::endl;
 
-                // Route the request
-                std::string response = router.route_request(request);
-                boost::asio::write(socket, boost::asio::buffer(response));
-            }
-            else {
-                // Print error message if reading fails
-                std::cerr << "Error while reading: " << error.message() << std::endl;
-            }
-        }
-    }
-    catch (std::exception& e) {
-        // Handle any exceptions thrown
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    return 0;
-}
+			std::string processed_request = middleware_pipeline_.execute(request);
+
+			std::string response = router_.route_request(processed_request);
+			boost::asio::write(socket, boost::asio::buffer(response));
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Exception in handling the request: " << e.what() << std::endl;
+		}
+	}
+};

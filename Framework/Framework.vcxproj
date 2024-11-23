@@ -135,11 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="router.hpp" />
+    <ClCompile Include="lib\controller.cpp" />
+    <ClCompile Include="lib\middleware.cpp" />
+    <ClCompile Include="include\middleware.hpp" />
+    <ClCompile Include="include\router.hpp" />
+    <ClCompile Include="lib\router.cpp" />
     <ClCompile Include="server.cpp" />
+    <ClCompile Include="start.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="text_controller.hpp" />
+    <ClInclude Include="include\controller.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
