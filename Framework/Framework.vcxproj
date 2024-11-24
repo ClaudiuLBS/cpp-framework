@@ -136,6 +136,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="lib\controller.cpp" />
+    <ClCompile Include="lib\db\builder\enums\constraints.cpp" />
+    <ClCompile Include="lib\db\builder\enums\types.cpp" />
+    <ClCompile Include="lib\db\builder\field.cpp" />
+    <ClCompile Include="lib\db\connector.cpp" />
+    <ClCompile Include="lib\db\builder\table.cpp" />
+    <ClCompile Include="lib\db\models\user.cpp" />
     <ClCompile Include="lib\middleware.cpp" />
     <ClCompile Include="include\middleware.hpp" />
     <ClCompile Include="include\router.hpp" />
@@ -145,6 +151,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\controller.hpp" />
+    <ClInclude Include="include\db\builder\field.hpp" />
+    <ClInclude Include="include\db\builder\table.hpp" />
+    <ClInclude Include="include\db\connector.hpp" />
+    <ClInclude Include="include\db\builder\enums\constraints.hpp" />
+    <ClInclude Include="include\db\builder\enums\types.hpp" />
+    <ClInclude Include="include\db\models\user.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
